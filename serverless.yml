@@ -1,0 +1,79 @@
+service: rppg
+frameworkVersion: "3"
+
+custom:
+  name: rppg
+
+  aws_api_gateway_resource_id: !ImportValue cf-APIGatewayID
+  aws_api_gateway_root_resource_id: !ImportValue cf-APIGatewayRootResourceID
+  aws_iam_role_lambda: ${ssm:/cf/${opt:stage}/aws_iam_role_lambda}
+
+  db_host: ${ssm:/cf/${opt:stage}/db_host}
+  db_username: ${ssm:/cf/${opt:stage}/db_user}
+  db_pass: ${ssm:/cf/${opt:stage}/db_password}
+  db_port: ${ssm:/cf/${opt:stage}/db_port}
+  db_name: ${ssm:/cf/${opt:stage}/db_name}
+
+  authorizer: ${ssm:/cf/api/custom-authorizer-id}
+  s3_bucket_name: ${ssm:/cf/${opt:stage}/s3_bucket_name}
+  cf_header_domain: ${ssm:/${opt:stage, self:provider.stage}/cf_header_domain}
+
+provider:
+  name: aws
+  region: ${opt:region, 'us-east-1'}
+  stage: ${opt:stage, 'dev'}
+
+  apiGateway:
+    restApiId: ${self:custom.aws_api_gateway_resource_id}
+    restApiRootResourceId: ${self:custom.aws_api_gateway_root_resource_id}
+
+  ecr:
+    images:
+      containerFunctionImage:
+        path: .
+        platform: linux/amd64
+
+functions:
+  rppg:
+    name: ${self:provider.stage}-rppg
+
+    image:
+      name: containerFunctionImage
+
+    timeout: 900
+    memorySize: 10240
+
+    role: ${self:custom.aws_iam_role_lambda}
+
+    events:
+      - http:
+          path: rppg
+          method: ANY
+          cors:
+            origin: ${self:custom.cf_header_domain}
+            headers:
+              - Access-Control-Allow-Origin
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+              - X-Amzn-Trace-Id
+            allowCredentials: true
+          private: false
+
+    environment:
+      DB_HOST: ${self:custom.db_host}
+      DB_NAME: ${self:custom.db_name}
+      DB_PASSWORD: ${self:custom.db_pass}
+      DB_PORT: ${self:custom.db_port}
+      DB_USERNAME: ${self:custom.db_username}
+      S3_BUCKET_NAME: mltrainingodf
+      HEADER_DOMAIN: ${self:custom.cf_header_domain}
+      OPENAI_API_KEY: ${ssm:/ag/${opt:stage, self:provider.stage}/openai_api_key}
+
+
+
+
+

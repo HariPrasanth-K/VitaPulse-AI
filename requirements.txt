@@ -1,0 +1,16 @@
+# ── Existing dependencies ────────────────────────────
+psycopg[binary]==3.2.9
+boto3==1.39.11
+python-dotenv==1.0.1
+
+# ── rPPG / PyTorch dependencies (CPU-only) ──────────
+# CPU-only PyTorch keeps Docker image under Lambda's 10 GB limit
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.2.2+cpu
+torchvision==0.17.2+cpu
+
+# ── Headless OpenCV (no GUI, suitable for Lambda/Docker) ─────
+opencv-python-headless==4.9.0.80
+
+# ── Common scientific libraries ─────────────────────
+numpy==1.26.4
